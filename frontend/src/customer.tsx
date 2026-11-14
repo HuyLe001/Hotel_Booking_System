@@ -3180,3 +3180,8 @@ export function Support({ ctx }: { ctx: CCtx }) {
     </PortalShell>
   )
 }
+
+
+export function BookingDetail({ ctx, bookingId }: { ctx: CCtx; bookingId?: string }) {
+  return <MyBookings ctx={ctx} focusId={bookingId} />
+}
