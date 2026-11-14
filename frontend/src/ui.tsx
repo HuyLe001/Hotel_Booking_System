@@ -180,7 +180,7 @@ const paths: Record<IconName, ReactNode> = {
   ),
 }
 
-export function Icon({ name, size = 20 }: { name: IconName size?: number }) {
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return (
     <svg
       width={size}
@@ -347,7 +347,7 @@ export function Brand({ dark = false }: { dark?: boolean }) {
   )
 }
 
-export function Avatar({ name, size = 34 }: { name: string size?: number }) {
+export function Avatar({ name, size = 34 }: { name: string; size?: number }) {
   const initials = name
     .split(" ")
     .slice(-2)
@@ -391,7 +391,7 @@ export function Tabs<T extends string>({
   value,
   onChange,
 }: {
-  items: { id: T label: string count?: number }[]
+  items: { id: T; label: string; count?: number }[]
   value: T
   onChange: (v: T) => void
 }) {

@@ -220,7 +220,7 @@ export function PortalShell({
   const { go, me, logout } = ctx
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
-  const navItems: { view: View label: string icon: React.ElementType }[] = [
+  const navItems: { view: View; label: string; icon: React.ElementType }[] = [
     { view: "portal", label: "Khám phá phòng", icon: Search },
     { view: "my-bookings", label: "Kỳ nghỉ của tôi", icon: Calendar },
     { view: "support", label: "Hỗ trợ khách hàng", icon: HelpCircle },
@@ -514,7 +514,7 @@ export function PortalShell({
    PORTAL SEARCH & ROOM LIST (CUSTOMER FLOW STEP 1)
    ───────────────────────────────────────────────────────────── */
 
-export function Portal({ ctx, preset }: { ctx: CCtx preset?: NavParams }) {
+export function Portal({ ctx, preset }: { ctx: CCtx; preset?: NavParams }) {
   const { store, go } = ctx
 
   const [inDate, setInDate] = useState(preset?.in ?? addDays(TODAY, 2))
@@ -1021,7 +1021,7 @@ export function Portal({ ctx, preset }: { ctx: CCtx preset?: NavParams }) {
    ROOM DETAIL VIEW (CUSTOMER FLOW STEP 2)
    ───────────────────────────────────────────────────────────── */
 
-export function RoomDetail({ ctx, params }: { ctx: CCtx params: NavParams }) {
+export function RoomDetail({ ctx, params }: { ctx: CCtx; params: NavParams }) {
   const { store, go } = ctx
 
   const roomType =
@@ -1442,7 +1442,7 @@ export function RoomDetail({ ctx, params }: { ctx: CCtx params: NavParams }) {
    MULTI-STEP CHECKOUT (CUSTOMER FLOW STEP 3)
    ───────────────────────────────────────────────────────────── */
 
-export function Checkout({ ctx, params }: { ctx: CCtx params: NavParams }) {
+export function Checkout({ ctx, params }: { ctx: CCtx; params: NavParams }) {
   const { store, me, go, notify } = ctx
 
   const room = store.rooms.find((r) => r.no === params.roomNo)
@@ -2100,7 +2100,7 @@ export function Checkout({ ctx, params }: { ctx: CCtx params: NavParams }) {
    SUCCESS CONFIRMATION & E-TICKET (CUSTOMER FLOW STEP 4)
    ───────────────────────────────────────────────────────────── */
 
-export function Success({ ctx, bookingId }: { ctx: CCtx bookingId?: string }) {
+export function Success({ ctx, bookingId }: { ctx: CCtx; bookingId?: string }) {
   const { store, go } = ctx
 
   const booking = store.bookings.find((b) => b.id === bookingId)
@@ -2284,7 +2284,7 @@ export function Success({ ctx, bookingId }: { ctx: CCtx bookingId?: string }) {
    MY BOOKINGS MANAGEMENT (CUSTOMER FLOW STEP 5)
    ───────────────────────────────────────────────────────────── */
 
-export function MyBookings({ ctx, focusId }: { ctx: CCtx focusId?: string }) {
+export function MyBookings({ ctx, focusId }: { ctx: CCtx; focusId?: string }) {
   const { store, me, go, notify } = ctx
 
   const [activeTab, setActiveTab] =
@@ -2977,7 +2977,7 @@ export function Profile({ ctx }: { ctx: CCtx }) {
    SUPPORT & CONCIERGE HELP DESK (CUSTOMER FLOW STEP 7)
    ───────────────────────────────────────────────────────────── */
 
-const FAQ_LIST: { q: string a: string }[] = [
+const FAQ_LIST: { q: string; a: string }[] = [
   {
     q: "Tôi có thể hủy phòng hoặc đổi ngày lưu trú không?",
     a: "Bạn có thể tự do đổi ngày lưu trú trực tuyến khi booking đang ở trạng thái “Đang chờ”. Nếu booking đã được xác nhận, vui lòng liên hệ trực tiếp hotline lễ tân 028 3822 1188. Chính sách hủy hoàn toàn miễn phí trước ngày nhận phòng 48 giờ.",
