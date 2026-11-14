@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react'
-import { Avatar, Badge, Brand, Button, Card, ConfirmDialog, EmptyState, Field, Icon, SelectField, Tabs, TextArea } from './ui'
+import { Avatar, Badge, ErrorState, InlineError, SkeletonCards, SkeletonPage, useLoading, Brand, Button, Card, ConfirmDialog, EmptyState, Field, Icon, SelectField, Tabs, TextArea } from './ui'
 import { Booking, Customer, IMG, NavParams, RoomType, Store, TODAY, View, addDays, availableRooms, fmtDate, nightsBetween, totalOf, typeOf, vnd, weekday } from './data'
 import { ChangeDatesModal } from './admin'
 
@@ -13,7 +13,7 @@ export function PortalShell({ ctx, view, children, wide }: { ctx: CCtx; view: Vi
   const { go, me, logout } = ctx
   const [menu, setMenu] = useState(false)
   const tabs: [View, string, string][] = [['portal', 'Tìm phòng', 'search'], ['my-bookings', 'Booking của tôi', 'calendar'], ['support', 'Hỗ trợ', 'help'], ['profile', 'Hồ sơ', 'user']]
-  const active = (v: View) => view === v || (v === 'portal' && ['room-detail', 'checkout', 'success'].includes(view))
+  const active = (v: View) => view === v || (v === 'my-bookings' && view === 'booking-detail') || (v === 'portal' && ['room-detail', 'checkout', 'success'].includes(view))
   return <div className="portal">
     <header className="portal-header"><button className="brand-btn" onClick={() => go('portal')} aria-label="Havenly - trang chủ"><Brand /></button>
       <nav aria-label="Điều hướng chính">{tabs.map(([v, l]) => <button key={v} className={active(v) ? 'active' : ''} onClick={() => go(v)}>{l}</button>)}</nav>
@@ -46,12 +46,14 @@ export function Portal({ ctx, preset }: { ctx: CCtx; preset?: NavParams }) {
   const [sort, setSort] = useState<'price-asc' | 'price-desc'>('price-asc')
   const [searched, setSearched] = useState(!!preset?.searched)
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
   const nights = nightsBetween(i, o)
   const search = () => {
     if (!i || !o) return setErr('Vui lòng chọn ngày nhận và trả phòng.')
     if (i < TODAY) return setErr('Ngày nhận phòng không được ở quá khứ.')
     if (o <= i) return setErr('Ngày trả phòng phải sau ngày nhận phòng.')
-    setErr(''); setSearched(true)
+    setErr(''); setBusy(true)
+    window.setTimeout(() => { setSearched(true); setBusy(false) }, 700)
     setTimeout(() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
   const list = useMemo(() => store.types.filter(t => type === 'all' || t.id === type).map(t => ({ t, left: searched ? availableRooms(store, i, o, t.id).length : store.rooms.filter(r => r.type === t.id && r.status === 'Available').length }))
@@ -61,12 +63,12 @@ export function Portal({ ctx, preset }: { ctx: CCtx; preset?: NavParams }) {
     <section className="hero"><img src={IMG.hero} alt="" /><div className="hero-shade" />
       <div className="hero-copy"><span className="eyebrow light">XIN CHÀO, {ctx.me.name.split(' ').slice(-1)[0].toUpperCase()}</span><h1>Tìm không gian nghỉ dưỡng <em>hoàn hảo cho bạn.</em></h1><p>Phòng ấm, dịch vụ tận tâm, ngay giữa trung tâm thành phố. Đặt phòng chỉ với vài bước, thanh toán khi nhận phòng.</p></div></section>
     <Card className="search-panel"><Field label="Ngày nhận phòng" type="date" min={TODAY} value={i} onChange={e => setI(e.target.value)} hint={i ? `${weekday(i)}, ${fmtDate(i)}` : ''} /><Field label="Ngày trả phòng" type="date" min={i} value={o} onChange={e => setO(e.target.value)} hint={o ? `${weekday(o)}, ${fmtDate(o)}` : ''} />
-      <SelectField label="Số khách" value={String(guests)} onChange={e => setGuests(+e.target.value)}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n} khách</option>)}</SelectField><Button icon="search" onClick={search}>Tìm phòng</Button>
+      <SelectField label="Số khách" value={String(guests)} onChange={e => setGuests(+e.target.value)}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n} khách</option>)}</SelectField><Button icon="search" loading={busy} onClick={search}>{busy ? 'Đang tìm…' : 'Tìm phòng'}</Button>
       {err && <p className="search-error" role="alert"><Icon name="alert" size={15} />{err}</p>}</Card>
     <section className="results" id="results"><div className="section-heading"><div><span className="eyebrow">{searched ? `${nights} ĐÊM · ${fmtDate(i)} – ${fmtDate(o)}` : 'PHÒNG NỔI BẬT'}</span><h2>{searched ? (list.some(x => x.left > 0) ? 'Phòng trống dành cho bạn' : 'Rất tiếc, đã hết phòng') : 'Lựa chọn được yêu thích'}</h2></div>
       <div className="results-tools"><div className="chips">{[['all', 'Tất cả'], ...store.types.map(t => [t.id, t.name])].map(([id, l]) => <button key={id} className={type === id ? 'on' : ''} onClick={() => setType(id)}>{l}</button>)}</div>
         <SelectField label="Sắp xếp" value={sort} onChange={e => setSort(e.target.value as typeof sort)}><option value="price-asc">Giá thấp đến cao</option><option value="price-desc">Giá cao đến thấp</option></SelectField></div></div>
-      {list.length === 0 ? <EmptyState icon="users" title="Không có loại phòng phù hợp" text={`Không loại phòng nào chứa được ${guests} khách. Hãy thử giảm số khách.`} /> :
+      {busy ? <SkeletonCards count={3} /> : list.length === 0 ? <EmptyState icon="users" title="Không có loại phòng phù hợp" text={`Không loại phòng nào chứa được ${guests} khách. Hãy thử giảm số khách.`} /> :
         <div className="portal-rooms">{list.map(({ t, left }) => <TypeCard key={t.id} t={t} left={left} nights={searched ? nights : 0} onOpen={() => open(t)} />)}</div>}</section>
     <section className="why"><div className="section-heading"><div><span className="eyebrow">TẠI SAO CHỌN HAVENLY</span><h2>Chi tiết nhỏ, trải nghiệm lớn</h2></div></div>
       <div className="why-grid">{([['sparkle', 'Dọn phòng mỗi ngày', 'Ga giường cotton, khăn tắm và đồ vệ sinh được thay mới mỗi ngày.'], ['clock', 'Hủy linh hoạt', 'Hủy miễn phí trước ngày nhận phòng 2 ngày, không cần giải thích.'], ['coffee', 'Bữa sáng tại phòng', 'Gọi bữa sáng kiểu Việt hoặc Âu, phục vụ ngay tại phòng từ 6:30.']] as const).map(([ic, t, d]) => <div key={t}><span><Icon name={ic} size={22} /></span><h3>{t}</h3><p>{d}</p></div>)}</div></section>
@@ -123,13 +125,15 @@ export function Checkout({ ctx, params }: { ctx: CCtx; params: NavParams }) {
   const [agree, setAgree] = useState(false)
   const [tried, setTried] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
   if (!room || !t || !params.in || !params.out) return <PortalShell ctx={ctx} view="checkout"><EmptyState icon="calendar" title="Chưa chọn phòng" text="Hãy chọn phòng trước khi đặt." action={<Button onClick={() => go('portal')}>Tìm phòng</Button>} /></PortalShell>
   const nights = nightsBetween(params.in, params.out)
   const e = { name: !f.name.trim() ? 'Vui lòng nhập họ tên.' : '', phone: f.phone.replace(/\D/g, '').length < 9 ? 'Số điện thoại chưa hợp lệ.' : '', email: !/^\S+@\S+\.\S+$/.test(f.email) ? 'Email chưa hợp lệ.' : '' }
   const submit = () => {
     setTried(true); if (e.name || e.phone || e.email || !agree) return
     if (!availableRooms(store, params.in!, params.out!, t.id).some(r => r.no === room.no)) { notify('Phòng vừa được đặt. Vui lòng chọn lại.'); return go('room-detail', { typeId: t.id, in: params.in, out: params.out, guests: params.guests }) }
-    setBusy(true)
+    if (!navigator.onLine) { setFailed(true); return }
+    setFailed(false); setBusy(true)
     setTimeout(() => { const bk = store.addBooking({ customerId: me.id, roomNo: room.no, in: params.in!, out: params.out!, status: 'Đang chờ', guests: params.guests ?? 2, note: f.note || undefined }); go('success', { bookingId: bk.id }) }, 700)
   }
   return <PortalShell ctx={ctx} view="checkout">
@@ -139,7 +143,8 @@ export function Checkout({ ctx, params }: { ctx: CCtx; params: NavParams }) {
         <div className="form-grid"><div className="span-2"><Field label="Họ và tên" value={f.name} onChange={x => setF({ ...f, name: x.target.value })} error={tried ? e.name : ''} /></div><Field label="Số điện thoại" icon="phone" value={f.phone} onChange={x => setF({ ...f, phone: x.target.value })} error={tried ? e.phone : ''} /><Field label="Email" icon="mail" value={f.email} onChange={x => setF({ ...f, email: x.target.value })} error={tried ? e.email : ''} /></div></Card>
       <Card><div className="section-title"><span><Icon name="heart" /></span><div><h3>Yêu cầu đặc biệt</h3><p>Không bắt buộc. Chúng tôi sẽ cố gắng đáp ứng tốt nhất.</p></div></div><TextArea label="Ghi chú" rows={3} placeholder="Ví dụ: tầng cao, nhận phòng sớm, giường phụ…" value={f.note} onChange={x => setF({ ...f, note: x.target.value })} /></Card>
       <Card className="agree-card"><label className="check"><input type="checkbox" checked={agree} onChange={x => setAgree(x.target.checked)} /><span>Tôi đồng ý với chính sách đặt phòng: hủy miễn phí trước 2 ngày, thanh toán trực tiếp tại quầy.</span></label>{tried && !agree && <p className="form-error">Bạn cần đồng ý với chính sách để tiếp tục.</p>}</Card>
-      <div className="form-actions"><Button variant="secondary" icon="back" onClick={() => go('room-detail', { typeId: t.id, in: params.in, out: params.out, guests: params.guests })}>Quay lại</Button><Button disabled={busy} onClick={submit}>{busy ? 'Đang gửi yêu cầu…' : 'Xác nhận đặt phòng'}{!busy && <Icon name="arrow" size={17} />}</Button></div>
+      {failed && <InlineError text="Không thể gửi yêu cầu đặt phòng vì mất kết nối mạng. Thông tin của bạn vẫn được giữ lại." onRetry={submit} />}
+      <div className="form-actions"><Button variant="secondary" icon="back" onClick={() => go('room-detail', { typeId: t.id, in: params.in, out: params.out, guests: params.guests })}>Quay lại</Button><Button loading={busy} onClick={submit}>{busy ? 'Đang gửi yêu cầu…' : 'Xác nhận đặt phòng'}{!busy && <Icon name="arrow" size={17} />}</Button></div>
     </div>
       <Card className="summary-card checkout-summary"><div className="sum-photo"><img src={t.image} alt="" /><div><b>Phòng {t.name}</b><small>P. {room.no} · Tầng {room.floor}</small></div></div>
         <div className="stay-dates"><div><span>NHẬN PHÒNG</span><b>{fmtDate(params.in)}</b><small>{weekday(params.in)}, 14:00</small></div><i><Icon name="arrow" size={17} /></i><div><span>TRẢ PHÒNG</span><b>{fmtDate(params.out)}</b><small>{weekday(params.out)}, 12:00</small></div></div>
@@ -177,17 +182,18 @@ export function MyBookings({ ctx, focusId }: { ctx: CCtx; focusId?: string }) {
   const [openId, setOpenId] = useState<string | null>(focusId ?? null)
   useEffect(() => { if (focusId) { const g = (['up', 'done', 'cancelled'] as const).find(k => groups[k].some(b => b.id === focusId)); if (g) setTab(g) } }, [focusId])
   const rows = groups[tab]
+  const loading = useLoading(600)
   return <PortalShell ctx={ctx} view="my-bookings">
     <div className="page-heading"><div><div><span className="eyebrow">TÀI KHOẢN CỦA TÔI</span><h2>Booking của tôi</h2><p>Theo dõi và quản lý các kỳ nghỉ của bạn.</p></div></div><Button icon="plus" onClick={() => go('portal')}>Đặt phòng mới</Button></div>
     <Tabs value={tab} onChange={setTab} items={[{ id: 'up', label: 'Sắp tới', count: groups.up.length }, { id: 'done', label: 'Đã hoàn thành', count: groups.done.length }, { id: 'cancelled', label: 'Đã hủy', count: groups.cancelled.length }]} />
-    <div className="ticket-list">{rows.length === 0 ? <EmptyState icon="calendar" title={tab === 'up' ? 'Chưa có kỳ nghỉ sắp tới' : tab === 'done' ? 'Chưa có lịch sử lưu trú' : 'Không có booking nào bị hủy'} text={tab === 'up' ? 'Hãy tìm một căn phòng ưng ý cho chuyến đi tiếp theo.' : 'Các booking phù hợp sẽ xuất hiện ở đây.'} action={tab === 'up' ? <Button onClick={() => go('portal')}>Tìm phòng</Button> : undefined} /> :
+    <div className="ticket-list">{loading ? <SkeletonPage /> : rows.length === 0 ? <EmptyState icon="calendar" title={tab === 'up' ? 'Chưa có kỳ nghỉ sắp tới' : tab === 'done' ? 'Chưa có lịch sử lưu trú' : 'Không có booking nào bị hủy'} text={tab === 'up' ? 'Hãy tìm một căn phòng ưng ý cho chuyến đi tiếp theo.' : 'Các booking phù hợp sẽ xuất hiện ở đây.'} action={tab === 'up' ? <Button onClick={() => go('portal')}>Tìm phòng</Button> : undefined} /> :
       rows.map(b => { const t = typeOf(store, b.roomNo); const n = nightsBetween(b.in, b.out); const pending = b.status === 'Đang chờ'; const open = openId === b.id
         return <Card className={`booking-ticket ${open ? 'open' : ''}`} key={b.id}>
           <div className="ticket-visual"><img src={t.image} alt={`Phòng ${t.name}`} /></div>
           <div className="ticket-info"><div className="ticket-top-row"><Badge status={b.status} /><small>{b.id}</small></div><h3>Phòng {t.name}</h3><p>P. {b.roomNo} · {t.bed} · {b.guests} khách</p>
             <div className="ticket-dates"><div><span>NHẬN PHÒNG</span><b>{fmtDate(b.in)}</b><small>{weekday(b.in)}, 14:00</small></div><Icon name="arrow" /><div><span>TRẢ PHÒNG</span><b>{fmtDate(b.out)}</b><small>{weekday(b.out)}, 12:00</small></div><div><span>TỔNG CỘNG</span><strong>{vnd(totalOf(store, b))}</strong><small>{n} đêm</small></div></div>
             {open && <div className="ticket-more"><div className="detail-row"><span>{vnd(t.price)} × {n} đêm</span><b>{vnd(totalOf(store, b))}</b></div><div className="detail-row"><span>Đặt lúc</span><b>{fmtDate(b.createdAt)}</b></div>{b.note && <div className="note-box"><Icon name="info" size={15} />{b.note}</div>}</div>}</div>
-          <div className="ticket-actions"><Button variant="ghost" icon={open ? 'chevron-down' : 'eye'} onClick={() => setOpenId(open ? null : b.id)}>{open ? 'Thu gọn' : 'Chi tiết'}</Button>
+          <div className="ticket-actions"><Button variant="ghost" icon="eye" onClick={() => go('booking-detail', { bookingId: b.id })}>Chi tiết</Button>
             {tab === 'up' && <><Button variant="secondary" icon="edit" disabled={!pending} title={pending ? undefined : 'Booking đã xác nhận, vui lòng liên hệ khách sạn để đổi ngày'} onClick={() => setEdit(b)}>Đổi ngày</Button><Button variant="danger" onClick={() => setCancel(b)}>Hủy booking</Button></>}
             {tab === 'done' && <Button variant="secondary" onClick={() => go('room-detail', { typeId: t.id })}>Đặt lại</Button>}
             {tab === 'up' && !pending && <small className="hint-small">Cần đổi ngày? Gọi 028 3822 1188</small>}</div></Card> })}</div>
@@ -240,5 +246,39 @@ export function Support({ ctx }: { ctx: CCtx }) {
       <Card className="msg-card"><h3>Gửi tin nhắn cho chúng tôi</h3><p>Phản hồi trong vòng 2 giờ làm việc.</p>
         <Field label="Chủ đề" value={msg.subject} onChange={e => setMsg({ ...msg, subject: e.target.value })} error={tried && !msg.subject.trim() ? 'Vui lòng nhập chủ đề.' : ''} /><TextArea label="Nội dung" rows={5} value={msg.body} onChange={e => setMsg({ ...msg, body: e.target.value })} />{tried && !msg.body.trim() && <p className="form-error">Vui lòng nhập nội dung.</p>}
         <Button className="full" onClick={() => { setTried(true); if (!msg.subject.trim() || !msg.body.trim()) return; setMsg({ subject: '', body: '' }); setTried(false); notify(`Cảm ơn ${me.name.split(' ').slice(-1)[0]}, chúng tôi đã nhận tin nhắn`) }}>Gửi tin nhắn</Button></Card></div>
+  </PortalShell>
+}
+
+/* ───────── Booking detail ───────── */
+
+export function BookingDetail({ ctx, bookingId }: { ctx: CCtx; bookingId?: string }) {
+  const { store, me, go, notify } = ctx
+  const b = store.bookings.find(x => x.id === bookingId && x.customerId === me.id)
+  const [edit, setEdit] = useState(false)
+  const [cancel, setCancel] = useState(false)
+  const loading = useLoading(500, [bookingId])
+  if (loading) return <PortalShell ctx={ctx} view="booking-detail"><SkeletonPage /></PortalShell>
+  if (!b) return <PortalShell ctx={ctx} view="booking-detail"><ErrorState title="Không tìm thấy booking" text="Booking này không tồn tại hoặc không thuộc tài khoản của bạn." onRetry={() => go('my-bookings')} /></PortalShell>
+  const t = typeOf(store, b.roomNo); const n = nightsBetween(b.in, b.out); const total = totalOf(store, b)
+  const upcoming = (b.status === 'Đang chờ' || b.status === 'Đã xác nhận') && b.out >= TODAY
+  const pending = b.status === 'Đang chờ'
+  const steps: [string, string, boolean][] = [['Đã gửi yêu cầu', fmtDate(b.createdAt), true], ['Khách sạn xác nhận', b.status === 'Đã hủy' ? 'Không thực hiện' : b.status === 'Đang chờ' ? 'Đang chờ xử lý' : 'Đã xác nhận', b.status !== 'Đang chờ' && b.status !== 'Đã hủy'], [b.status === 'Đã hủy' ? 'Booking đã hủy' : 'Lưu trú', b.status === 'Đã hủy' ? '' : `${fmtDate(b.in)} – ${fmtDate(b.out)}`, b.status === 'Đã hoàn thành' || b.status === 'Đã hủy']]
+  return <PortalShell ctx={ctx} view="booking-detail">
+    <button className="back-link" onClick={() => go('my-bookings', { bookingId: b.id })}><Icon name="back" size={16} />Booking của tôi</button>
+    <div className="page-heading"><div><div><span className="eyebrow">CHI TIẾT BOOKING</span><h2>{b.id}</h2><p>Đặt lúc {fmtDate(b.createdAt)}</p></div></div><Badge status={b.status} /></div>
+    <div className="detail-page"><div className="form-stack">
+      <Card className="detail-hero"><img src={t.image} alt={`Phòng ${t.name}`} /><div><h3>Phòng {t.name} · P. {b.roomNo}</h3><p className="muted-text">{t.bed} · {t.size} m² · {t.view}</p>
+        <div className="stay-dates"><div><span>NHẬN PHÒNG</span><b>{fmtDate(b.in)}</b><small>{weekday(b.in)}, 14:00</small></div><i><Icon name="arrow" size={17} /></i><div><span>TRẢ PHÒNG</span><b>{fmtDate(b.out)}</b><small>{weekday(b.out)}, 12:00</small></div></div>
+        {b.note && <div className="note-box"><Icon name="info" size={15} />{b.note}</div>}</div></Card>
+      <Card><h3>Tiến trình</h3><div className="timeline">{steps.map(([a, c, done]) => <div key={a} className={done ? '' : 'off'}><i /><span><b>{a}</b>{c}</span></div>)}</div></Card></div>
+      <Card className="summary-card"><h3>Chi phí</h3>
+        <div className="summary-line"><span>Số khách</span><b>{b.guests} khách</b></div><div className="summary-line"><span>{vnd(t.price)} × {n} đêm</span><b>{vnd(total)}</b></div>
+        <div className="summary-total"><span>Tổng cộng</span><strong>{vnd(total)}</strong><small>Thanh toán tại quầy khi nhận phòng</small></div>
+        <div className="form-stack" style={{ marginTop: 18 }}>
+          {upcoming && <><Button variant="secondary" icon="edit" className="full" disabled={!pending} onClick={() => setEdit(true)}>Đổi ngày</Button>{!pending && <small className="hint-small">Booking đã xác nhận, gọi 028 3822 1188 để đổi ngày.</small>}<Button variant="danger" className="full" onClick={() => setCancel(true)}>Hủy booking</Button></>}
+          {!upcoming && <Button className="full" onClick={() => go('room-detail', { typeId: t.id })}>Đặt lại phòng này</Button>}
+          <Button variant="ghost" className="full" icon="help" onClick={() => go('support')}>Cần hỗ trợ?</Button></div></Card></div>
+    {edit && <ChangeDatesModal store={store} booking={b} onClose={() => setEdit(false)} onSave={(i, o) => { store.updateBooking(b.id, { in: i, out: o }); setEdit(false); notify('Đã cập nhật ngày lưu trú') }} />}
+    {cancel && <ConfirmDialog danger title="Hủy booking này?" confirmLabel="Hủy booking" text={<>Bạn sắp hủy booking <b>{b.id}</b> ({fmtDate(b.in)} – {fmtDate(b.out)}). Phòng sẽ được trả lại cho khách khác.</>} onClose={() => setCancel(false)} onConfirm={() => { store.updateBooking(b.id, { status: 'Đã hủy' }); setCancel(false); notify(`Đã hủy booking ${b.id}`) }} />}
   </PortalShell>
 }

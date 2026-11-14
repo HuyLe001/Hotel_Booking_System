@@ -11,6 +11,7 @@ obj/
 
 !**/appsettings.example.json
 !frontend/package.json
+!frontend/tsconfig.json
 !frontend/.figma/
 !frontend/.figma/make/
 !frontend/.figma/make/site.json
