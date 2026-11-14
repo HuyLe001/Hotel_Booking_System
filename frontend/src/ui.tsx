@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 
 export type IconName =
   | 'grid' | 'calendar' | 'bed' | 'layers' | 'users' | 'plus' | 'search' | 'bell' | 'chevron' | 'arrow' | 'more'
@@ -58,8 +58,8 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-export function Button({ children, variant = 'primary', icon, onClick, type = 'button', className = '', disabled, title }: { children?: ReactNode; variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'icon' | 'gold'; icon?: IconName; onClick?: () => void; type?: 'button' | 'submit'; className?: string; disabled?: boolean; title?: string }) {
-  return <button type={type} title={title} aria-label={title} disabled={disabled} className={`btn btn-${variant} ${className}`} onClick={onClick}>{icon && <Icon name={icon} size={18} />}{children}</button>
+export function Button({ children, variant = 'primary', icon, onClick, type = 'button', className = '', disabled, title, loading }: { loading?: boolean; children?: ReactNode; variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'icon' | 'gold'; icon?: IconName; onClick?: () => void; type?: 'button' | 'submit'; className?: string; disabled?: boolean; title?: string }) {
+  return <button type={type} title={title} aria-label={title} disabled={disabled || loading} aria-busy={loading || undefined} className={`btn btn-${variant} ${className} ${loading ? 'btn-loading' : ''}`} onClick={onClick}>{icon && <Icon name={icon} size={18} />}{children}</button>
 }
 
 export function Field({ label, error, icon, hint, ...props }: { label: string; error?: string; icon?: IconName; hint?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -125,4 +125,36 @@ export function ConfirmDialog({ title, text, confirmLabel, danger, onConfirm, on
   return <Modal title={title} onClose={onClose} width={440} footer={<><Button variant="secondary" onClick={onClose}>Quay lại</Button><Button className={danger ? 'btn-danger-solid' : ''} onClick={onConfirm}>{confirmLabel}</Button></>}>
     <div className={`confirm-icon ${danger ? 'danger' : ''}`}><Icon name={danger ? 'alert' : 'info'} size={24} /></div><p className="confirm-text">{text}</p>
   </Modal>
+}
+
+/* ───────── Loading & error states ───────── */
+
+export function useLoading(ms = 650, deps: unknown[] = []) {
+  const [loading, setLoading] = useState(true)
+  useEffect(() => { setLoading(true); const t = window.setTimeout(() => setLoading(false), ms); return () => window.clearTimeout(t) }, deps) // eslint-disable-line react-hooks/exhaustive-deps
+  return loading
+}
+
+export function Skeleton({ w = '100%', h = 14, r = 8, className = '' }: { w?: number | string; h?: number | string; r?: number; className?: string }) {
+  return <i className={`skeleton ${className}`} style={{ width: w, height: h, borderRadius: r }} aria-hidden="true" />
+}
+
+export function SkeletonCards({ count = 3 }: { count?: number }) {
+  return <div className="portal-rooms" role="status" aria-label="Đang tải dữ liệu">{Array.from({ length: count }, (_, k) => <div key={k} className="type-result skel-card"><Skeleton h={190} r={0} /><div className="type-result-body"><Skeleton w="35%" h={10} /><Skeleton w="70%" h={20} /><Skeleton h={12} /><Skeleton w="60%" h={12} /><Skeleton w="45%" h={34} r={9} /></div></div>)}</div>
+}
+
+export function SkeletonPage() {
+  return <div className="skel-page" role="status" aria-label="Đang tải dữ liệu">
+    <div className="skel-row"><Skeleton w={220} h={28} /><Skeleton w={130} h={40} r={9} /></div>
+    <div className="skel-kpis">{[0, 1, 2, 3].map(k => <div key={k} className="card"><Skeleton w="45%" h={11} /><Skeleton w="65%" h={26} /><Skeleton w="35%" h={11} /></div>)}</div>
+    <div className="card skel-table">{[0, 1, 2, 3, 4].map(k => <div key={k}><Skeleton w={34} h={34} r={17} /><Skeleton w="22%" /><Skeleton w="18%" /><Skeleton w="14%" /><Skeleton w={80} h={24} r={12} /></div>)}</div>
+  </div>
+}
+
+export function ErrorState({ title = 'Không thể tải dữ liệu', text = 'Kết nối của bạn có thể không ổn định. Vui lòng thử lại sau ít giây.', onRetry, retrying }: { title?: string; text?: string; onRetry: () => void; retrying?: boolean }) {
+  return <div className="empty error-state" role="alert"><span><Icon name="alert" size={26} /></span><h3>{title}</h3><p>{text}</p><Button icon="clock" disabled={retrying} onClick={onRetry}>{retrying ? 'Đang thử lại…' : 'Thử lại'}</Button></div>
+}
+
+export function InlineError({ text, onRetry }: { text: string; onRetry?: () => void }) {
+  return <div className="inline-error" role="alert"><Icon name="alert" size={18} /><span>{text}</span>{onRetry && <button onClick={onRetry}>Thử lại</button>}</div>
 }

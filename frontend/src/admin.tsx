@@ -15,7 +15,7 @@ const CODE_RE = /^\s*$/
 const NAV: { label: string; items: [View, IconName, string][] }[] = [
   { label: 'VẬN HÀNH', items: [['dashboard', 'grid', 'Tổng quan'], ['bookings', 'calendar', 'Đặt phòng'], ['calendar', 'clock', 'Lịch phòng']] },
   { label: 'DANH MỤC', items: [['rooms', 'bed', 'Phòng'], ['room-types', 'layers', 'Loại phòng'], ['customers', 'users', 'Khách hàng']] },
-  { label: 'HỆ THỐNG', items: [['reports', 'chart', 'Báo cáo'], ['settings', 'settings', 'Cài đặt']] },
+  { label: 'HỆ THỐNG', items: [['reports', 'chart', 'Báo cáo'], ['settings', 'settings', 'Cài đặt'], ['ui-kit', 'layers', 'Thư viện giao diện']] },
 ]
 
 export function Sidebar({ view, go, open, close, pending }: { view: View; go: (v: View) => void; open: boolean; close: () => void; pending: number }) {
@@ -245,22 +245,24 @@ export function BookingsPage({ ctx, open }: { ctx: Ctx; open: (id: string) => vo
   const [tab, setTab] = useState<'all' | BookingStatus>('all')
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
   const size = 8
-  const rows = useMemo(() => store.bookings.filter(b => (tab === 'all' || b.status === tab) && (type === 'all' || typeOf(store, b.roomNo).id === type) && (() => {
+  const rows = useMemo(() => store.bookings.filter(b => (tab === 'all' || b.status === tab) && (type === 'all' || typeOf(store, b.roomNo).id === type) && (!from || b.in >= from) && (!to || b.in <= to) && (() => {
     const k = q.trim().toLowerCase(); if (!k) return true
     const c = store.customers.find(x => x.id === b.customerId)!
     return (b.id + c.name + c.phone + b.roomNo).toLowerCase().includes(k)
-  })()).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [store, tab, q, type])
-  useEffect(() => setPage(1), [tab, q, type])
+  })()).sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [store, tab, q, type, from, to])
+  useEffect(() => setPage(1), [tab, q, type, from, to])
   const cnt = (s: BookingStatus) => store.bookings.filter(b => b.status === s).length
   const exportCsv = () => { downloadCsv('bookings.csv', [['Mã', 'Khách hàng', 'Phòng', 'Nhận phòng', 'Trả phòng', 'Số đêm', 'Tổng tiền', 'Trạng thái'], ...rows.map(b => [b.id, store.customers.find(c => c.id === b.customerId)!.name, b.roomNo, fmtDate(b.in), fmtDate(b.out), String(nightsBetween(b.in, b.out)), String(totalOf(store, b)), b.status])]); notify(`Đã xuất ${rows.length} booking ra CSV`) }
   return <>
     <div className="page-heading"><div><div><h2>Quản lý booking</h2><p>Theo dõi và xử lý tất cả booking tại khách sạn.</p></div></div><div className="heading-actions"><Button variant="secondary" icon="download" onClick={exportCsv}>Xuất CSV</Button><Button icon="plus" onClick={() => go('create-booking')}>Tạo booking</Button></div></div>
     <Card>
       <div className="tabs-bar"><Tabs value={tab} onChange={setTab} items={[{ id: 'all', label: 'Tất cả', count: store.bookings.length }, { id: 'Đang chờ', label: 'Đang chờ', count: cnt('Đang chờ') }, { id: 'Đã xác nhận', label: 'Đã xác nhận', count: cnt('Đã xác nhận') }, { id: 'Đã hoàn thành', label: 'Hoàn thành', count: cnt('Đã hoàn thành') }, { id: 'Đã hủy', label: 'Đã hủy', count: cnt('Đã hủy') }]} /></div>
-      <Toolbar search={q} onSearch={setQ} placeholder="Tìm theo mã, khách hàng, số phòng…"><SelectField label="Loại phòng" value={type} onChange={e => setType(e.target.value)}><option value="all">Tất cả loại phòng</option>{store.types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</SelectField></Toolbar>
-      {rows.length === 0 ? <EmptyState title="Không tìm thấy booking" text="Thử đổi từ khóa hoặc bộ lọc trạng thái." action={<Button variant="secondary" onClick={() => { setQ(''); setTab('all'); setType('all') }}>Xóa bộ lọc</Button>} /> :
+      <Toolbar search={q} onSearch={setQ} placeholder="Tìm theo mã, khách hàng, số phòng…"><SelectField label="Loại phòng" value={type} onChange={e => setType(e.target.value)}><option value="all">Tất cả loại phòng</option>{store.types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</SelectField><Field label="Nhận phòng từ" type="date" value={from} onChange={e => setFrom(e.target.value)} /><Field label="Đến ngày" type="date" min={from} value={to} onChange={e => setTo(e.target.value)} /></Toolbar>
+      {rows.length === 0 ? <EmptyState title="Không tìm thấy booking" text="Thử đổi từ khóa hoặc bộ lọc trạng thái." action={<Button variant="secondary" onClick={() => { setQ(''); setTab('all'); setType('all'); setFrom(''); setTo('') }}>Xóa bộ lọc</Button>} /> :
         <><BookingTable ctx={ctx} data={rows.slice((page - 1) * size, page * size)} onOpen={b => open(b.id)} /><Pagination page={page} setPage={setPage} total={rows.length} size={size} unit="booking" /></>}
     </Card>
   </>

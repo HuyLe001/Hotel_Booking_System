@@ -3,12 +3,13 @@ import {
   Booking, CURRENT_CUSTOMER_ID, Customer, NavParams, Room, RoomType, Store, TODAY, View, fmtDate, initialBookings, initialCustomers,
   initialRooms, roomTypes, weekday, IMG,
 } from './data'
-import { Icon } from './ui'
+import { Icon, SkeletonPage, useLoading } from './ui'
+import { UiKitPage } from './kit'
 import { Login } from './auth'
 import { BookingDrawer, BookingsPage, CalendarPage, CreateBooking, CustomersPage, Dashboard, Header, NotificationPanel, ReportsPage, RoomTypesPage, RoomsPage, SearchPalette, SettingsPage, Sidebar, Ctx } from './admin'
-import { Checkout, MyBookings, Portal, Profile, RoomDetail, Success, Support } from './customer'
+import { Checkout, BookingDetail, MyBookings, Portal, Profile, RoomDetail, Success, Support } from './customer'
 
-const ADMIN_VIEWS: View[] = ['dashboard', 'bookings', 'create-booking', 'calendar', 'rooms', 'room-types', 'customers', 'reports', 'settings']
+const ADMIN_VIEWS: View[] = ['dashboard', 'bookings', 'create-booking', 'calendar', 'rooms', 'room-types', 'customers', 'reports', 'settings', 'ui-kit']
 
 const TITLES: Partial<Record<View, [string, string]>> = {
   dashboard: ['Tổng quan', `${weekday(TODAY)}, ${fmtDate(TODAY)}`],
@@ -20,6 +21,7 @@ const TITLES: Partial<Record<View, [string, string]>> = {
   customers: ['Khách hàng', 'Quản lý khách hàng'],
   reports: ['Báo cáo', 'Hiệu quả kinh doanh'],
   settings: ['Cài đặt', 'Khách sạn & tài khoản'],
+  'ui-kit': ['Thư viện giao diện', 'Component & trạng thái'],
 }
 
 function useStore(): Store {
@@ -59,6 +61,7 @@ export default function App() {
   const [palette, setPalette] = useState(false)
   const [notif, setNotif] = useState(false)
   const timer = useRef<number>(0)
+  const loading = useLoading(550, [view])
 
   const notify = useCallback((text: string) => {
     setToast(text); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setToast(''), 3000)
@@ -93,6 +96,7 @@ export default function App() {
       {view === 'room-detail' && <RoomDetail ctx={cctx} params={params} key={JSON.stringify(params)} />}
       {view === 'checkout' && <Checkout ctx={cctx} params={params} />}
       {view === 'success' && <Success ctx={cctx} bookingId={params.bookingId} />}
+      {view === 'booking-detail' && <BookingDetail ctx={cctx} bookingId={params.bookingId} key={params.bookingId} />}
       {view === 'my-bookings' && <MyBookings ctx={cctx} focusId={params.bookingId} />}
       {view === 'profile' && <Profile ctx={cctx} />}
       {view === 'support' && <Support ctx={cctx} />}
@@ -109,6 +113,7 @@ export default function App() {
     <div className="app-main">
       <Header title={title} subtitle={subtitle} onMenu={() => setMenu(true)} onLogout={logout} onSearch={() => setPalette(true)} notifications={pending} onNotifications={() => setNotif(true)} />
       <main className="content" key={view}>
+        {loading && ['dashboard', 'bookings', 'rooms', 'customers', 'reports'].includes(view) ? <SkeletonPage /> : <>
         {view === 'dashboard' && <Dashboard ctx={ctx} open={openBooking} />}
         {view === 'bookings' && <BookingsPage ctx={ctx} open={openBooking} />}
         {view === 'create-booking' && <CreateBooking ctx={ctx} preset={params} />}
@@ -118,6 +123,8 @@ export default function App() {
         {view === 'customers' && <CustomersPage ctx={ctx} open={id => setProfileId(id)} openId={profileId} closeProfile={() => setProfileId(undefined)} />}
         {view === 'reports' && <ReportsPage ctx={ctx} />}
         {view === 'settings' && <SettingsPage ctx={ctx} />}
+        {view === 'ui-kit' && <UiKitPage ctx={ctx} />}
+        </>}
       </main>
     </div>
     {drawerId && <BookingDrawer ctx={ctx} bookingId={drawerId} close={() => setDrawerId(null)} />}

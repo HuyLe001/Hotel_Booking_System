@@ -2,7 +2,7 @@ import type { IconName } from './ui'
 
 export type BookingStatus = 'Đang chờ' | 'Đã xác nhận' | 'Đã hủy' | 'Đã hoàn thành'
 export type TypeId = string
-export type View = 'login' | 'dashboard' | 'bookings' | 'create-booking' | 'calendar' | 'rooms' | 'room-types' | 'customers' | 'reports' | 'settings' | 'portal' | 'room-detail' | 'checkout' | 'success' | 'my-bookings' | 'profile' | 'support'
+export type View = 'login' | 'dashboard' | 'bookings' | 'create-booking' | 'calendar' | 'rooms' | 'room-types' | 'customers' | 'reports' | 'settings' | 'portal' | 'room-detail' | 'checkout' | 'success' | 'my-bookings' | 'profile' | 'support' | 'booking-detail' | 'ui-kit'
 export interface NavParams { roomNo?: string; typeId?: TypeId; in?: string; out?: string; guests?: number; bookingId?: string; customerId?: string; searched?: boolean }
 
 export interface RoomType { id: TypeId; name: string; desc: string; price: number; capacity: number; size: number; view: string; bed: string; image: string; gallery: string[]; tagline: string }

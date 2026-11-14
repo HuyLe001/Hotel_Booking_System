@@ -513,3 +513,32 @@ tr.clickable { cursor: pointer; transition: background .15s; } tr.clickable:hove
   .booking-ticket { grid-template-columns: 1fr; } .ticket-visual { min-height: 0; height: 150px; } .ticket-dates { gap: 14px; } .ticket-dates > svg { display: none; } .ticket-dates div:last-child { margin-left: 0; text-align: left; }
   .ticket-top img { width: 90px; height: 66px; } .ticket-grid { grid-template-columns: 1fr; } .portal-footer { padding-bottom: 90px; } .success h1 { font-size: 26px; }
 }
+
+/* ───────── Loading / error / detail / ui-kit ───────── */
+.skeleton { display: block; background: linear-gradient(90deg, #e9eef3 25%, #f4f7fa 50%, #e9eef3 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite linear; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.skel-card { overflow: hidden; } .skel-card .type-result-body { display: grid; gap: 12px; }
+.skel-page { display: grid; gap: 22px; } .skel-row { display: flex; justify-content: space-between; }
+.skel-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; } .skel-kpis .card { padding: 20px; display: grid; gap: 12px; }
+.skel-table { padding: 8px 20px; } .skel-table > div { display: flex; align-items: center; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); } .skel-table > div:last-child { border: 0; }
+.error-state > span { background: var(--danger-soft); color: var(--danger); }
+.inline-error { display: flex; align-items: center; gap: 10px; background: var(--danger-soft); color: var(--danger); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; }
+.inline-error svg { flex: none; } .inline-error span { flex: 1; } .inline-error button { font-weight: 700; text-decoration: underline; color: inherit; min-height: 32px; }
+.btn:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(22,140,138,.45); outline-offset: 2px; }
+.btn-loading::before { content: ''; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.detail-page { display: grid; grid-template-columns: 1.5fr .9fr; gap: 24px; align-items: start; }
+.detail-page .card { padding: 22px; } .detail-page h3 { font-size: 16px; margin-bottom: 8px; }
+.detail-hero { padding: 0 !important; overflow: hidden; } .detail-hero img { width: 100%; height: 260px; object-fit: cover; display: block; }
+.detail-hero > div { padding: 22px; }
+.timeline { display: grid; gap: 0; margin-top: 8px; } .timeline > div { display: flex; gap: 12px; padding-bottom: 16px; position: relative; font-size: 13.5px; color: var(--muted); }
+.timeline > div::before { content: ''; position: absolute; left: 5px; top: 14px; bottom: 0; width: 2px; background: var(--line); } .timeline > div:last-child::before { display: none; }
+.timeline i { width: 12px; height: 12px; border-radius: 50%; background: var(--teal); margin-top: 3px; flex: none; z-index: 1; } .timeline .off i { background: #cdd6de; } .timeline b { color: var(--ink); display: block; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; font-size: 13px; margin-bottom: 14px; min-height: 36px; } .back-link:hover { color: var(--teal-dark); }
+.kit { display: grid; gap: 28px; } .kit-section > h3 { font-size: 18px; margin-bottom: 14px; } .kit-section > p { color: var(--muted); margin: -8px 0 14px; font-size: 13.5px; }
+.kit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; } .kit-grid > .card { padding: 20px; display: grid; gap: 14px; align-content: start; }
+.kit-grid > .card > small { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.kit-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.swatches { display: flex; flex-wrap: wrap; gap: 12px; } .swatches div { width: 120px; } .swatches i { display: block; height: 56px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 6px; } .swatches b { font-size: 12.5px; display: block; } .swatches small { color: var(--muted); font-size: 11.5px; }
+@media (max-width: 900px) { .detail-page { grid-template-columns: 1fr; } .skel-kpis { grid-template-columns: 1fr 1fr; } }
